@@ -18,13 +18,30 @@ def _detect_session() -> str:
 
 
 def _fetch_h4() -> pd.DataFrame:
-    # Implemented in Task 2
-    raise NotImplementedError
+    df = yf.download(TICKER, period="60d", interval="1h", progress=False)
+    if df.empty:
+        raise RuntimeError(f"yfinance returned empty H4 data for {TICKER}")
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(1)
+    df = df.resample("4h").agg({
+        "Open": "first",
+        "High": "max",
+        "Low": "min",
+        "Close": "last",
+        "Volume": "sum",
+    }).dropna()
+    if df.empty:
+        raise RuntimeError("H4 resample produced empty DataFrame")
+    return df.tail(H4_BARS)
 
 
 def _fetch_m15() -> pd.DataFrame:
-    # Implemented in Task 2
-    raise NotImplementedError
+    df = yf.download(TICKER, period="5d", interval="15m", progress=False)
+    if df.empty:
+        raise RuntimeError(f"yfinance returned empty M15 data for {TICKER}")
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(1)
+    return df.dropna().tail(M15_BARS)
 
 
 def fetch_data_node(state: XAUState) -> XAUState:

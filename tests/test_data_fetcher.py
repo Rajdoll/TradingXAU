@@ -57,3 +57,50 @@ def test_session_boundary_london_start():
 def test_session_boundary_ny_start():
     from agents.data_fetcher import _detect_session
     assert _detect_session() == "NEW_YORK"
+
+
+# ── H4 fetch tests ───────────────────────────────────────────────
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_h4_flattens_multiindex(mock_dl):
+    from agents.data_fetcher import _fetch_h4
+    mock_dl.return_value = _make_ohlcv_multiindex(n_rows=900)
+    result = _fetch_h4()
+    assert not isinstance(result.columns, pd.MultiIndex)
+    assert set(result.columns) == {"Open", "High", "Low", "Close", "Volume"}
+
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_h4_resamples_to_4h(mock_dl):
+    from agents.data_fetcher import _fetch_h4
+    mock_dl.return_value = _make_ohlcv_multiindex(n_rows=900)
+    result = _fetch_h4()
+    # After resampling 900 1h bars → 225 4h bars → tail(200)
+    assert len(result) == 200
+
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_h4_empty_raises(mock_dl):
+    from agents.data_fetcher import _fetch_h4
+    mock_dl.return_value = pd.DataFrame()
+    with pytest.raises(RuntimeError, match="empty H4 data"):
+        _fetch_h4()
+
+
+# ── M15 fetch tests ──────────────────────────────────────────────
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_m15_flattens_multiindex(mock_dl):
+    from agents.data_fetcher import _fetch_m15
+    mock_dl.return_value = _make_ohlcv_multiindex(n_rows=300)
+    result = _fetch_m15()
+    assert not isinstance(result.columns, pd.MultiIndex)
+    assert set(result.columns) == {"Open", "High", "Low", "Close", "Volume"}
+
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_m15_empty_raises(mock_dl):
+    from agents.data_fetcher import _fetch_m15
+    mock_dl.return_value = pd.DataFrame()
+    with pytest.raises(RuntimeError, match="empty M15 data"):
+        _fetch_m15()
