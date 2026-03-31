@@ -132,3 +132,56 @@ def test_fetch_m15_returns_tail_bars(mock_dl):
     mock_dl.return_value = _make_flat_ohlcv(n_rows=300, freq="15min")
     result = _fetch_m15()
     assert len(result) == 200
+
+
+# ── fetch_data_node integration tests ────────────────────────────
+
+def _empty_state() -> dict:
+    """Minimal state dict for testing node output."""
+    return {}
+
+
+@patch("agents.data_fetcher._fetch_m15")
+@patch("agents.data_fetcher._fetch_h4")
+def test_node_populates_all_7_fields(mock_h4, mock_m15):
+    from agents.data_fetcher import fetch_data_node
+    h4 = _make_flat_ohlcv(n_rows=200, freq="4h")
+    m15 = _make_flat_ohlcv(n_rows=200, freq="15min")
+    mock_h4.return_value = h4
+    mock_m15.return_value = m15
+    result = fetch_data_node(_empty_state())
+    for field in ["ohlcv_h4", "ohlcv_m15", "current_price",
+                  "fetch_timestamp", "session", "news_risk", "news_events"]:
+        assert field in result, f"Missing field: {field}"
+
+
+@patch("agents.data_fetcher._fetch_m15")
+@patch("agents.data_fetcher._fetch_h4")
+def test_node_current_price_is_last_h4_close(mock_h4, mock_m15):
+    from agents.data_fetcher import fetch_data_node
+    h4 = _make_flat_ohlcv(n_rows=200, freq="4h")
+    m15 = _make_flat_ohlcv(n_rows=200, freq="15min")
+    mock_h4.return_value = h4
+    mock_m15.return_value = m15
+    result = fetch_data_node(_empty_state())
+    assert result["current_price"] == float(h4["Close"].iloc[-1])
+
+
+@patch("agents.data_fetcher._fetch_m15")
+@patch("agents.data_fetcher._fetch_h4")
+def test_node_news_risk_is_false_stub(mock_h4, mock_m15):
+    from agents.data_fetcher import fetch_data_node
+    mock_h4.return_value = _make_flat_ohlcv(200, "4h")
+    mock_m15.return_value = _make_flat_ohlcv(200, "15min")
+    result = fetch_data_node(_empty_state())
+    assert result["news_risk"] is False
+
+
+@patch("agents.data_fetcher._fetch_m15")
+@patch("agents.data_fetcher._fetch_h4")
+def test_node_news_events_is_empty_stub(mock_h4, mock_m15):
+    from agents.data_fetcher import fetch_data_node
+    mock_h4.return_value = _make_flat_ohlcv(200, "4h")
+    mock_m15.return_value = _make_flat_ohlcv(200, "15min")
+    result = fetch_data_node(_empty_state())
+    assert result["news_events"] == []

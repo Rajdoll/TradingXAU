@@ -45,5 +45,15 @@ def _fetch_m15() -> pd.DataFrame:
 
 
 def fetch_data_node(state: XAUState) -> XAUState:
-    # Implemented in Task 3
-    raise NotImplementedError
+    h4  = _fetch_h4()
+    m15 = _fetch_m15()
+    return {
+        **state,
+        "ohlcv_h4":        h4.to_dict(),
+        "ohlcv_m15":       m15.to_dict(),
+        "current_price":   float(h4["Close"].iloc[-1]),
+        "fetch_timestamp": datetime.now(timezone.utc).isoformat(),
+        "session":         _detect_session(),
+        "news_risk":       False,   # Phase 2: tools/news_calendar.py
+        "news_events":     [],      # Phase 2: tools/news_calendar.py
+    }
