@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cp:*)",
+      "Bash(python -m pytest tests/test_core_state.py -v)",
+      "Bash(python -m pytest tests/test_core_config.py -v)",
+      "Bash(uv add:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(pip --version)",
+      "Bash(uv --version)",
+      "Bash(python -m pytest tests/test_data_fetcher.py -v)",
+      "Bash(python:*)"
+    ]
+  }
+}
