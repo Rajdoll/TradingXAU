@@ -104,3 +104,31 @@ def test_fetch_m15_empty_raises(mock_dl):
     mock_dl.return_value = pd.DataFrame()
     with pytest.raises(RuntimeError, match="empty M15 data"):
         _fetch_m15()
+
+
+# ── Flat-column acceptance tests ─────────────────────────────────
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_h4_accepts_flat_columns(mock_dl):
+    from agents.data_fetcher import _fetch_h4
+    mock_dl.return_value = _make_flat_ohlcv(n_rows=900, freq="1h")
+    result = _fetch_h4()
+    assert not isinstance(result.columns, pd.MultiIndex)
+    assert set(result.columns) == {"Open", "High", "Low", "Close", "Volume"}
+
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_m15_accepts_flat_columns(mock_dl):
+    from agents.data_fetcher import _fetch_m15
+    mock_dl.return_value = _make_flat_ohlcv(n_rows=300, freq="15min")
+    result = _fetch_m15()
+    assert not isinstance(result.columns, pd.MultiIndex)
+    assert set(result.columns) == {"Open", "High", "Low", "Close", "Volume"}
+
+
+@patch("agents.data_fetcher.yf.download")
+def test_fetch_m15_returns_tail_bars(mock_dl):
+    from agents.data_fetcher import _fetch_m15
+    mock_dl.return_value = _make_flat_ohlcv(n_rows=300, freq="15min")
+    result = _fetch_m15()
+    assert len(result) == 200
