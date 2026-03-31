@@ -153,6 +153,7 @@ def test_node_populates_all_7_fields(mock_h4, mock_m15):
     for field in ["ohlcv_h4", "ohlcv_m15", "current_price",
                   "fetch_timestamp", "session", "news_risk", "news_events"]:
         assert field in result, f"Missing field: {field}"
+    assert result["fetch_timestamp"].endswith("+00:00")
 
 
 @patch("agents.data_fetcher._fetch_m15")
@@ -185,3 +186,14 @@ def test_node_news_events_is_empty_stub(mock_h4, mock_m15):
     mock_m15.return_value = _make_flat_ohlcv(200, "15min")
     result = fetch_data_node(_empty_state())
     assert result["news_events"] == []
+
+
+@patch("agents.data_fetcher._detect_session", return_value="LONDON")
+@patch("agents.data_fetcher._fetch_m15")
+@patch("agents.data_fetcher._fetch_h4")
+def test_node_session_comes_from_detect_session(mock_h4, mock_m15, mock_session):
+    from agents.data_fetcher import fetch_data_node
+    mock_h4.return_value = _make_flat_ohlcv(200, "4h")
+    mock_m15.return_value = _make_flat_ohlcv(200, "15min")
+    result = fetch_data_node(_empty_state())
+    assert result["session"] == "LONDON"
