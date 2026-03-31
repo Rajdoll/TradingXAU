@@ -44,6 +44,10 @@ def test_returns_series_indexed_by_datetime():
     swings = detect_swings(df, window=1)
     assert isinstance(swings.highs.index, pd.DatetimeIndex)
     assert isinstance(swings.lows.index, pd.DatetimeIndex)
+    # Empty-path must also preserve DatetimeIndex
+    flat = _make_swing_df([3100.0, 3150.0, 3200.0, 3250.0, 3300.0])
+    empty_swings = detect_swings(flat, window=1)
+    assert isinstance(empty_swings.highs.index, pd.DatetimeIndex)
 
 
 def test_empty_highs_on_monotonic_increase():
@@ -65,13 +69,14 @@ def test_empty_lows_on_monotonic_decrease():
 
 
 def test_window_parameter_controls_sensitivity():
-    # 15-bar series with multiple peaks — window=1 finds more highs than window=5
+    # 15-bar series with multiple peaks/valleys — window=1 finds more than window=5
     prices = [3100, 3200, 3100, 3050, 3100, 3250, 3100, 3000,
               3100, 3200, 3100, 3050, 3100, 3250, 3100]
     df = _make_swing_df(prices)
     swings_w1 = detect_swings(df, window=1)
     swings_w5 = detect_swings(df, window=5)
     assert len(swings_w1.highs) > len(swings_w5.highs)
+    assert len(swings_w1.lows) > len(swings_w5.lows)
 
 
 def test_last_high_and_low_via_iloc():
