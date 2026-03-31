@@ -16,7 +16,7 @@ def detect_swings(df: pd.DataFrame, window: int = SWING_WINDOW) -> SwingPoints:
     high_idx = argrelextrema(highs_arr, np.greater, order=window)[0]
     low_idx  = argrelextrema(lows_arr,  np.less,    order=window)[0]
 
-    swing_highs = df["High"].iloc[high_idx] if len(high_idx) else pd.Series(dtype=float)
-    swing_lows  = df["Low"].iloc[low_idx]   if len(low_idx)  else pd.Series(dtype=float)
+    swing_highs = df["High"].iloc[high_idx] if len(high_idx) else pd.Series(dtype=float, index=pd.DatetimeIndex([]))
+    swing_lows  = df["Low"].iloc[low_idx]   if len(low_idx)  else pd.Series(dtype=float, index=pd.DatetimeIndex([]))
 
     return SwingPoints(highs=swing_highs, lows=swing_lows)
