@@ -29,6 +29,8 @@ def detect_double_bottom(
     low1 = float(swings.lows.iloc[-2])
     low2 = float(swings.lows.iloc[-1])
 
+    if min(low1, low2) <= 0:
+        return None
     if abs(low1 - low2) / min(low1, low2) > TOLERANCE:
         return None
 

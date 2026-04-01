@@ -17,10 +17,20 @@ def test_pattern_registry_is_list():
 # ── Fixture helpers ───────────────────────────────────────────────
 
 def _make_double_bottom_df() -> pd.DataFrame:
-    """5-bar W-shape: High=Low=[3200,3100,3200,3100,3200], window=1."""
-    prices = [3200.0, 3100.0, 3200.0, 3100.0, 3200.0]
+    """5-bar W-shape with realistic OHLCV (High != Low), window=1.
+
+    High: [3250, 3150, 3250, 3150, 3250]
+    Low:  [3150, 3100, 3150, 3100, 3150]
+    argrelextrema(High, np.greater, order=1): idx 2 → 3250.0 (neckline)
+    argrelextrema(Low, np.less,    order=1): idx 1 → 3100.0, idx 3 → 3100.0
+    neckline=3250.0, entry_zone_low=3250.0, entry_zone_high=3250.0*1.003=3257.75
+    invalidation=3100.0 - 20*0.01 = 3099.8
+    """
     index = pd.date_range("2026-01-01", periods=5, freq="4h")
-    return pd.DataFrame({"High": prices, "Low": prices}, index=index)
+    return pd.DataFrame({
+        "High": [3250.0, 3150.0, 3250.0, 3150.0, 3250.0],
+        "Low":  [3150.0, 3100.0, 3150.0, 3100.0, 3150.0],
+    }, index=index)
 
 
 def _db_swings() -> SwingPoints:
@@ -41,10 +51,10 @@ def test_double_bottom_direction_is_buy():
 
 
 def test_double_bottom_entry_zone_at_neckline():
-    result = detect_double_bottom(_make_double_bottom_df(), _db_swings(), current_price=3200.0)
-    # neckline = 3200.0 (swing high between the two lows)
-    assert result["entry_zone_low"] == 3200.0
-    assert result["entry_zone_high"] == pytest.approx(3200.0 * 1.003)
+    result = detect_double_bottom(_make_double_bottom_df(), _db_swings(), current_price=3250.0)
+    # neckline = 3250.0 (swing high between the two lows)
+    assert result["entry_zone_low"] == 3250.0
+    assert result["entry_zone_high"] == pytest.approx(3250.0 * 1.003)
 
 
 def test_double_bottom_formation_pct_capped_at_1():
@@ -76,6 +86,17 @@ def test_double_bottom_returns_none_if_fewer_than_2_lows():
     swings = SwingPoints(
         highs=pd.Series([3200.0], index=[idx[2]]),
         lows=pd.Series([3100.0], index=[idx[1]]),   # only 1 low
+    )
+    assert detect_double_bottom(df, swings, current_price=3150.0) is None
+
+
+def test_double_bottom_returns_none_if_no_high_between_lows():
+    # Two valid lows but no swing high exists between them → not a Double Bottom
+    idx = pd.date_range("2026-01-01", periods=5, freq="4h")
+    df = pd.DataFrame({"High": [3200.0] * 5, "Low": [3100.0] * 5}, index=idx)
+    swings = SwingPoints(
+        highs=pd.Series(dtype=float, index=pd.DatetimeIndex([])),  # no highs at all
+        lows=pd.Series([3100.0, 3100.0], index=[idx[1], idx[3]]),
     )
     assert detect_double_bottom(df, swings, current_price=3150.0) is None
 
